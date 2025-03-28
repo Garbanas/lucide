@@ -2,6 +2,29 @@ import { basename } from 'path';
 import { parseSync } from 'svgson';
 import { generateHashedKey, readSvg, hasDuplicatedChildren } from '@lucide/helpers';
 
+function checkForDuplicatedChildren(
+  contents,
+  name,
+  renderUniqueKey = false,
+) {
+  if (hasDuplicatedChildren(contents.children)) {
+    throw new Error(`Duplicated children in ${name}.svg`);
+  }
+
+  contents.children.forEach((child) => {
+    checkForDuplicatedChildren(child, name, renderUniqueKey)
+  });
+}
+
+function generateUniqueKeys(contents) {
+  return contents.children.map((child) => {
+    child.attributes.key = generateHashedKey(child);
+    child.children = generateUniqueKeys(child);
+
+    return child;
+  });
+}
+
 /**
  * Build an object in the format: `{ <name>: <contents> }`.
  * @param {string[]} svgFiles - A list of filenames.
@@ -22,16 +45,10 @@ export default async function generateIconObject(
       throw new Error(`${name}.svg has no children!`);
     }
 
-    if (hasDuplicatedChildren(contents.children)) {
-      throw new Error(`Duplicated children in ${name}.svg`);
-    }
+    checkForDuplicatedChildren(contents, name, renderUniqueKey);
 
     if (renderUniqueKey) {
-      contents.children = contents.children.map((child) => {
-        child.attributes.key = generateHashedKey(child);
-
-        return child;
-      });
+      contents.children = generateUniqueKeys(contents);
     }
 
     return { name, contents };

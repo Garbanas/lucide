@@ -4,6 +4,10 @@ import prettier from 'prettier';
 import { readSvg, toPascalCase } from '@lucide/helpers';
 import deprecationReasonTemplate from '../utils/deprecationReasonTemplate.mjs';
 
+function mapChildren(nodes) {
+  return nodes.map(({ name, attributes, children }) => [name, attributes, mapChildren(children)].slice(0, children.length === 0 ? 2 : 3));
+}
+
 function generateIconFiles({
   iconNodes,
   outputDirectory,
@@ -28,10 +32,10 @@ function generateIconFiles({
     const componentName = toPascalCase(iconName);
 
     let { children } = iconNodes[iconName];
-    children = children.map(({ name, attributes }) => [name, attributes]);
+    children = mapChildren(children);
 
     const getSvg = () => readSvg(`${iconName}.svg`, iconsDir);
-    const { deprecated = false, toBeRemovedInVersion = null } = iconMetaData[iconName];
+    const { deprecated = false, toBeRemovedInVersion = null } = iconMetaData[iconName] || {};
     const deprecationReason = deprecated
       ? deprecationReasonTemplate(iconMetaData[iconName].deprecationReason, {
           componentName,
@@ -50,7 +54,7 @@ function generateIconFiles({
     });
 
     const output = pretty
-      ? prettier.format(elementTemplate, {
+      ? await prettier.format(elementTemplate, {
           singleQuote: true,
           trailingComma: 'all',
           printWidth: 100,

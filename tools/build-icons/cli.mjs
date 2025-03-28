@@ -15,7 +15,7 @@ import generateDynamicImports from './building/generateDynamicImports.mjs';
 
 const cliArguments = getArgumentOptions(process.argv.slice(2));
 
-const ICONS_DIR = path.resolve(process.cwd(), '../../icons');
+const ICONS_DIR = path.resolve(process.cwd(), cliArguments.icons || '../../icons');
 const OUTPUT_DIR = path.resolve(process.cwd(), cliArguments.output || '../build');
 
 if (!fs.existsSync(OUTPUT_DIR)) {
@@ -30,6 +30,7 @@ const {
   importImportFileExtension = '',
   exportFileName = 'index.js',
   exportModuleNameCasing = 'pascal',
+  ignoreMissingMetadata = false,
   withAliases = false,
   aliasNamesOnly = false,
   withDynamicImports = false,
@@ -53,7 +54,7 @@ async function buildIcons() {
 
   const { default: iconFileTemplate } = await import(path.resolve(process.cwd(), templateSrc));
 
-  const iconMetaData = await getIconMetaData(ICONS_DIR);
+  const iconMetaData = await getIconMetaData(ICONS_DIR, ignoreMissingMetadata);
 
   // Generates iconsNodes files for each icon
   await generateIconFiles({
